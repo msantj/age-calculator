@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Age Calculator</title>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet" />
+
+  <!-- Flatpickr (JS Datepicker) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
+
+  <!-- Luxon -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/luxon/3.4.4/luxon.min.js"></script>
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <div class="bg-grid"></div>
+
+  <main class="card">
+    <div class="card-header">
+      <span class="label">HOW OLD ARE YOU?</span>
+      <h1>Age<br/>Calculator</h1>
+    </div>
+
+    <div class="card-body">
+      <label for="birthdate">Your birth date</label>
+      <div class="input-wrap">
+        <input id="birthdate" type="text" placeholder="DD / MM / YYYY" readonly />
+        <span class="cal-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+        </span>
+      </div>
+      <p class="error" id="error"></p>
+
+      <button id="calc-btn" onclick="calculate()">
+        <span>Calculate</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="result" id="result">
+      <div class="result-row">
+        <div class="stat" id="stat-years">
+          <span class="num">--</span>
+          <span class="unit">years</span>
+        </div>
+        <div class="divider"></div>
+        <div class="stat" id="stat-months">
+          <span class="num">--</span>
+          <span class="unit">months</span>
+        </div>
+        <div class="divider"></div>
+        <div class="stat" id="stat-days">
+          <span class="num">--</span>
+          <span class="unit">days</span>
+        </div>
+      </div>
+      <p class="result-summary" id="result-summary"></p>
+    </div>
+  </main>
+
+  <script>
+    // Init Flatpickr
+    flatpickr("#birthdate", {
+      dateFormat: "d/m/Y",
+      maxDate: "today",
+      disableMobile: true,
+      allowInput: false,
+    });
+
+    function animateNumber(el, target) {
+      let start = 0;
+      const duration = 600;
+      const step = timestamp => {
+        if (!step.startTime) step.startTime = timestamp;
+        const progress = Math.min((timestamp - step.startTime) / duration, 1);
+        el.textContent = Math.floor(progress * target);
+        if (progress < 1) requestAnimationFrame(step);
+        else el.textContent = target;
+      };
+      requestAnimationFrame(step);
+    }
+
+    function calculate() {
+      const { DateTime } = luxon;
+      const raw = document.getElementById("birthdate").value;
+      const errorEl = document.getElementById("error");
+      const result = document.getElementById("result");
+      const summary = document.getElementById("result-summary");
+
+      errorEl.textContent = "";
+
+      if (!raw) {
+        errorEl.textContent = "Please select a birth date.";
+        result.classList.remove("visible");
+        return;
+      }
+
+      const [day, month, year] = raw.split("/").map(Number);
+      const birth = DateTime.fromObject({ day, month, year });
+
+      if (!birth.isValid) {
+        errorEl.textContent = "Invalid date. Please try again.";
+        result.classList.remove("visible");
+        return;
+      }
+
+      if (birth > DateTime.now()) {
+        errorEl.textContent = "Birth date cannot be in the future.";
+        result.classList.remove("visible");
+        return;
+      }
+
+      const now = DateTime.now();
+      const diff = now.diff(birth, ["years", "months", "days"]).toObject();
+
+      const years  = Math.floor(diff.years);
+      const months = Math.floor(diff.months);
+      const days   = Math.floor(diff.days);
+
+      const yEl = document.querySelector("#stat-years .num");
+      const mEl = document.querySelector("#stat-months .num");
+      const dEl = document.querySelector("#stat-days .num");
+
+      result.classList.add("visible");
+      animateNumber(yEl, years);
+      animateNumber(mEl, months);
+      animateNumber(dEl, days);
+
+      summary.textContent = `You are ${years} year${years !== 1 ? "s" : ""}, ${months} month${months !== 1 ? "s" : ""}, and ${days} day${days !== 1 ? "s" : ""} old.`;
+    }
+  </script>
+</body>
+</html>
